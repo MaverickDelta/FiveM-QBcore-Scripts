@@ -11,6 +11,9 @@ local palletSpawned = false
 local jobForkLift = {}
 local palletInPlace = false
 
+local jobBlipId = {}
+local jobBlip = false
+
 -- Create Blips
 function createBlips()
     for bike, _ in pairs(Config.jobLocation) do
@@ -27,6 +30,13 @@ function createBlips()
             EndTextCommandSetBlipName(BikeBlip)
         end
     end
+end
+
+function addMissionBlip(x, y, z)
+	local blipId = 0
+	blipId = AddBlipForCoord(x, y, z)
+	SetBlipRoute(blipId, true)
+	return blipId
 end
 
 -- Draw 3D Text
@@ -95,9 +105,11 @@ local function createPeds()
                     action = function()
 
                         if currentFLJob == false then
+                            TriggerServerEvent("InteractSound_SV:PlayOnSource", "shiftyclick", 1)
                             QBCore.Functions.Notify(Config.jobRecived, "success")
                             startFTJob(v["forkliftCoords"], vehicle)
                         else
+                            TriggerServerEvent("InteractSound_SV:PlayOnSource", "monkeyopening", 0.5)
                             QBCore.Functions.Notify(Config.doingJob, "error")
                         end
 
@@ -122,8 +134,10 @@ local function createPeds()
                         if currentFLJob == true then
                             currentFLJob = false
                             palletSpawned = false
+                            TriggerServerEvent("InteractSound_SV:PlayOnSource", "shiftyclick", 1)
                             QBCore.Functions.Notify(Config.finishedJob, "success")
                         else
+                            TriggerServerEvent("InteractSound_SV:PlayOnSource", "monkeyopening", 0.5)
                             QBCore.Functions.Notify(Config.notDoingJob, "error")
                         end
 
@@ -152,6 +166,9 @@ function startFTJob(forkliftSP, jobVeh)
         Wait(0)
         RequestModel(jobVeh)
     end
+
+    Wait(250)
+    TriggerServerEvent("InteractSound_SV:PlayOnSource", "airwrench", 0.25)
 
     jobForkLift = CreateVehicle(jobVeh, coords.x, coords.y, coords.z, coords.w, true, false)
 
@@ -199,11 +216,11 @@ function jobInProgress()
 
             if dist < 3 then
                 if v["title"] == "return" then   
-                    if IsControlJustReleased(0, 38 --[[ INPUT_PICKUP ]]) then
+                    if IsControlJustReleased(0, 38) then
                         returnForklift(xPlayer)
                     end
                 elseif v["title"] == "getPallet" then
-                    if IsControlJustReleased(0, 38 --[[ INPUT_PICKUP ]]) then
+                    if IsControlJustReleased(0, 38) then
                         getPallet()
                     end
                 end
@@ -232,10 +249,15 @@ function getPallet()
             if palletSpawned == false then
                 if palletId == random then
                     if locationId == random2 then
+                        TriggerServerEvent("InteractSound_SV:PlayOnSource", "shiftyclick", 1)
                         palletObj = CreateObject(palletModel, f["coords"].x, f["coords"].y, f["coords"].z-1, f["coords"].w, true, false)
+
+                        local palletCoords = GetEntityCoords(palletObj)
 
                         QBCore.Functions.Notify(Config.palletSpawned, "success")
                         palletSpawned = true
+
+                        palletLoaded(palletCoords, random2)
                         palletJob(palletObj, palletMultiplier, spawnMultiplier)
                     end
                 end
@@ -247,9 +269,34 @@ function getPallet()
     end
 end
 
+function palletLoaded(palletCoords, location)
+    while true do
+        for k, v in pairs(Config.palletLocations) do
+            local locationId = v["id"]
+            local xPlayer = PlayerPedId()
+            local pos = GetEntityCoords(xPlayer)
+            local dist = GetDistanceBetweenCoords(pos, palletCoords.x, palletCoords.y, palletCoords.z, true)
+
+            if locationId == location then
+                if dist > 5 then
+                    DrawMarker(v["marker"], v["coords"].x, v["coords"].y, v["coords"].z + 1.5, 0.0, 0.0, 0.0, 0.0, 0.0, 180.0, 0.75, 0.75, 0.75, v["colourr"], v["colourg"], v["colourb"], v["coloura"], true, false, 2, nil, nil, false)
+                    
+                    createJobBlip(v["coords"].x, v["coords"].y, v["coords"].z)
+                else
+                    jobBlip = false
+                    RemoveBlip(jobBlipId)
+                    ClearAllBlipRoutes()
+                    return
+                end
+            end
+        end
+        Wait(10)
+    end
+end
 
 function palletJob(palletObject, palletMultiplier, spawnMultiplier)
     local random = math.random(1,2)
+
     while palletSpawned == true do
         for k, v in pairs(Config.palletReturnLocations) do
             local returnId = v["id"]
@@ -263,12 +310,19 @@ function palletJob(palletObject, palletMultiplier, spawnMultiplier)
 
 
             if returnId == random then
+
+                createJobBlip(v["coords"].x, v["coords"].y, v["coords"].z)
+
                 if dist < 25 then
                     DrawMarker(v["marker"], v["coords"].x, v["coords"].y, v["coords"].z, 0.0, 0.0, 0.0, 0.0, 0.0, 180.0, 2.5, 2.5, 2.0, v["colourr"], v["colourg"], v["colourb"], v["coloura"], true, false, 2, nil, nil, false)
                 end
 
                 if palletDist < 0.5 then
                     Draw3DText(palletPos, v["label"])
+
+                    jobBlip = false
+                    RemoveBlip(jobBlipId)
+                    ClearAllBlipRoutes()
 
                     if IsControlJustReleased(0, 38) then
                         completePallet(xPlayer, palletObject, totalPay)
@@ -281,18 +335,33 @@ function palletJob(palletObject, palletMultiplier, spawnMultiplier)
     end
 end
 
+function createJobBlip(x, y, z)
+
+    if not jobBlip then
+        jobBlipId = addMissionBlip(x, y, z)
+        jobBlip = true
+    end
+
+end
+
 function returnForklift(source)
     local xPlayer = source
     local currentVeh = GetVehiclePedIsIn(xPlayer, false)
 
     if IsPedInModel(xPlayer, 'Forklift',true) then
+        TriggerServerEvent("InteractSound_SV:PlayOnSource", "shiftyclick", 1)
         DeleteVehicle(currentVeh)
         currentFLJob = false
         palletSpawned = false
+        QBCore.Functions.Notify(Config.forkliftReturned, "success")
+    else
+        TriggerServerEvent("InteractSound_SV:PlayOnSource", "monkeyopening", 0.5)
+        QBCore.Functions.Notify(Config.noForklift, "error")
     end
 end
 
 function completePallet(source, palletObject, totalPay)
+    palletCollected = false
     DeleteObject(palletObject)
     palletSpawned = false
     TriggerServerEvent('forkliftJob:pay', GetPlayerServerId(PlayerId()), totalPay)
