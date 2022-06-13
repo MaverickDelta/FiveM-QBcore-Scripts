@@ -8,6 +8,8 @@ Config.finishedJob = "You have finished working" -- Message for finishing work
 Config.notDoingJob = "You cannot finish what you never started" -- Message for trying to finish job when one isnt started
 Config.palletSpawned = "Pallet spawned, collect it and take it to the drop off" -- Message for spawning pallet
 Config.palletAlreadyOut = "These is already a pallet available" -- Message for trying to spawn second pallet
+Config.noForklift = "You need a forklift to do this" -- Message for trying to return forklift without forklift
+Config.forkliftReturned = "Forklift has been returned. That you for your help today" -- Message for returning forklift
 
 Config.basePay = 1000
 
@@ -147,18 +149,28 @@ Config.palletLocations = {
         ["blippriority"] = 1,
         ["blipsprite"] = 478,
         ["blipcolor"] = 1,
+        ["colourr"] = 255,
+        ["colourg"] = 0,
+        ["colourb"] = 0,
+        ["coloura"] = 75,
+        ["marker"] = 0,
     },
 
     ["Pallet 2"] = {
         ["id"] = 2,
         ["label"] = "Pallet2",
-        ["coords"] = vector4(130.57, -3100.49, 5.9, 139.05),
+        ["coords"] = vector4(142.59, -3093.05, 5.9, 285.43),
         ["multiplier"] = 8,
         ["showblip"] = true,
         ["blipscale"] = 0.7,
         ["blippriority"] = 1,
         ["blipsprite"] = 478,
         ["blipcolor"] = 1,
+        ["colourr"] = 255,
+        ["colourg"] = 0,
+        ["colourb"] = 0,
+        ["coloura"] = 75,
+        ["marker"] = 0,
     },
 
 }
