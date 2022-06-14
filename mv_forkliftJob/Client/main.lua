@@ -14,6 +14,9 @@ local palletInPlace = false
 local jobBlipId = {}
 local jobBlip = false
 
+local returnVehicleId = {}
+local returnVehicleIn = false
+
 -- Create Blips
 function createBlips()
     for bike, _ in pairs(Config.jobLocation) do
@@ -232,13 +235,12 @@ function jobInProgress()
 end
 
 function getPallet()
-    local random = math.random(1,6)
-    local random2 = math.random(1,2)
+    local random = math.random(1,5)
+    local random2 = math.random(1,83)
     
     for _, v in pairs(Config.palletType) do
         local palletId = v["id"]
         local palletModel = v["label"]
-        local palletMultiplier = v["multiplier"]
 
         palletModel = type(palletModel) == 'string' and GetHashKey(palletModel) or palletModel
         
@@ -250,7 +252,8 @@ function getPallet()
                 if palletId == random then
                     if locationId == random2 then
                         TriggerServerEvent("InteractSound_SV:PlayOnSource", "shiftyclick", 1)
-                        palletObj = CreateObject(palletModel, f["coords"].x, f["coords"].y, f["coords"].z-1, f["coords"].w, true, false)
+                        palletObj = CreateObject(palletModel, f["coords"].x, f["coords"].y, f["coords"].z, true, true, false)
+                        SetEntityHeading(palletObj, f["coords"].w)
 
                         local palletCoords = GetEntityCoords(palletObj)
 
@@ -258,7 +261,7 @@ function getPallet()
                         palletSpawned = true
 
                         palletLoaded(palletCoords, random2)
-                        palletJob(palletObj, palletMultiplier, spawnMultiplier)
+                        palletJob(palletObj, spawnMultiplier)
                     end
                 end
             else
@@ -279,7 +282,7 @@ function palletLoaded(palletCoords, location)
 
             if locationId == location then
                 if dist > 5 then
-                    DrawMarker(v["marker"], v["coords"].x, v["coords"].y, v["coords"].z + 1.5, 0.0, 0.0, 0.0, 0.0, 0.0, 180.0, 0.75, 0.75, 0.75, v["colourr"], v["colourg"], v["colourb"], v["coloura"], true, false, 2, nil, nil, false)
+                    DrawMarker(Config.LocationMarker, v["coords"].x, v["coords"].y, v["coords"].z + 2, 0.0, 0.0, 0.0, 0.0, 0.0, 180.0, 0.75, 0.75, 0.75, Config.locationColourR, Config.locationColourG, Config.locationColourB, Config.locationColourA, true, false, 2, nil, nil, false)
                     
                     createJobBlip(v["coords"].x, v["coords"].y, v["coords"].z)
                 else
@@ -294,7 +297,7 @@ function palletLoaded(palletCoords, location)
     end
 end
 
-function palletJob(palletObject, palletMultiplier, spawnMultiplier)
+function palletJob(palletObject, spawnMultiplier)
     local random = math.random(1,2)
 
     while palletSpawned == true do
@@ -305,13 +308,16 @@ function palletJob(palletObject, palletMultiplier, spawnMultiplier)
             local palletPos = GetEntityCoords(palletObject)
             local dist = GetDistanceBetweenCoords(pos, v["coords"].x, v["coords"].y, v["coords"].z, true)
             local palletDist = GetDistanceBetweenCoords(palletPos, v["coords"].x, v["coords"].y, v["coords"].z,true)
-            local returnMultiplier = v["multiplier"]
-            local totalPay = (Config.basePay * palletMultiplier * returnMultiplier * spawnMultiplier)
+            local returnVehicle = v["vehicle"]
+            local totalPay = (Config.basePay * spawnMultiplier)
 
+            returnVehicle = type(returnVehicle) == 'string' and GetHashKey(returnVehicle) or returnVehicle
 
             if returnId == random then
 
                 createJobBlip(v["coords"].x, v["coords"].y, v["coords"].z)
+
+                createReturnVehicle(returnVehicle, v["vehCoords"].x, v["vehCoords"].y, v["vehCoords"].z, v["vehCoords"].w)
 
                 if dist < 25 then
                     DrawMarker(v["marker"], v["coords"].x, v["coords"].y, v["coords"].z, 0.0, 0.0, 0.0, 0.0, 0.0, 180.0, 2.5, 2.5, 2.0, v["colourr"], v["colourg"], v["colourb"], v["coloura"], true, false, 2, nil, nil, false)
@@ -353,6 +359,7 @@ function returnForklift(source)
         DeleteVehicle(currentVeh)
         currentFLJob = false
         palletSpawned = false
+        jobBlip = false
         QBCore.Functions.Notify(Config.forkliftReturned, "success")
     else
         TriggerServerEvent("InteractSound_SV:PlayOnSource", "monkeyopening", 0.5)
@@ -360,12 +367,28 @@ function returnForklift(source)
     end
 end
 
+function createReturnVehicle(returnVehicle, x, y, z, w)
+    if returnVehicleIn == false then
+        while not HasModelLoaded(returnVehicle) do
+            Wait(0)
+            RequestModel(returnVehicle)
+        end
+
+        returnVehicleId = CreateVehicle(returnVehicle, x, y, z, w, true, false)
+        CreatePedInsideVehicle(returnVehicleId, 0, "s_m_m_trucker_01", -1, true, false)
+
+        returnVehicleIn = true
+    else
+        return
+    end
+end
+
 function completePallet(source, palletObject, totalPay)
     palletCollected = false
     DeleteObject(palletObject)
     palletSpawned = false
+    returnVehicleIn = false
     TriggerServerEvent('forkliftJob:pay', GetPlayerServerId(PlayerId()), totalPay)
-
     return
 end
 
