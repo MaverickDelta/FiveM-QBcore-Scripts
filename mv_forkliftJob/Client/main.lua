@@ -15,6 +15,7 @@ local jobBlipId = {}
 local jobBlip = false
 
 local returnVehicleId = {}
+local returnVehiclePed = {}
 local returnVehicleIn = false
 
 -- Create Blips
@@ -331,6 +332,7 @@ function palletJob(palletObject, spawnMultiplier)
                     ClearAllBlipRoutes()
 
                     if IsControlJustReleased(0, 38) then
+                        TaskVehicleDriveToCoordLongrange(returnVehiclePed, returnVehicleId, 493.47, -3390.27, 6.07, 100, 447, 20);
                         completePallet(xPlayer, palletObject, totalPay)
                     end
                 end
@@ -375,7 +377,7 @@ function createReturnVehicle(returnVehicle, x, y, z, w)
         end
 
         returnVehicleId = CreateVehicle(returnVehicle, x, y, z, w, true, false)
-        CreatePedInsideVehicle(returnVehicleId, 0, "s_m_m_trucker_01", -1, true, false)
+        returnVehiclePed = CreatePedInsideVehicle(returnVehicleId, 0, "s_m_m_trucker_01", -1, true, false)
 
         returnVehicleIn = true
     else
