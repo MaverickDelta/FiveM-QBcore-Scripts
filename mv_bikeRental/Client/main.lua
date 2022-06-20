@@ -35,7 +35,6 @@ local function createPeds()
 
         current = type(current) == 'string' and GetHashKey(current) or current
         vehicle = type(vehicle) == 'string' and GetHashKey(vehicle) or vehicle
-        RequestModel(current)
 
         while not HasModelLoaded(vehicle) do
             Wait(0)
@@ -44,13 +43,14 @@ local function createPeds()
 
         while not HasModelLoaded(current) do
             Wait(0)
+            RequestModel(current)
         end
 
         BikeVeh[k] = CreateVehicle(vehicle, v["coords"].x, v["coords"].y, v["coords"].z-1, v["coords"].w, false, false)
         BikePed[k] = CreatePed(0, current, v["coords"].x, v["coords"].y - 0.5, v["coords"].z-1, v["coords"].w, false, false)
 
         -- Ped Freeze
-        TaskStartScenarioInPlace(BikePed[k], v["scenario"], true)
+        --TaskStartScenarioInPlace(BikePed[k], v["scenario"], true)
         FreezeEntityPosition(BikePed[k], true)
         SetEntityInvincible(BikePed[k], true)
         SetBlockingOfNonTemporaryEvents(BikePed[k], true)
@@ -71,9 +71,11 @@ local function createPeds()
                     action = function()
 
                         if bikeRented == false then
+                            TriggerServerEvent("InteractSound_SV:PlayOnSource", "shiftyclick", 1)
                             TriggerServerEvent('rentBike:pay', Config.rentalPrice, coords, GetPlayerServerId(PlayerId()))
                             QBCore.Functions.Notify(Config.bikeRecived, "success")
                         else
+                            TriggerServerEvent("InteractSound_SV:PlayOnSource", "monkeyopening", 0.5)
                             QBCore.Functions.Notify(Config.bikeOut, "error")
                         end
 
@@ -141,10 +143,12 @@ AddEventHandler('returnPedVeh', function()
 
     if IsPedInModel(xPlayer, 'Cruiser',true) then
         DeleteVehicle(rentalReturn)
+        TriggerServerEvent("InteractSound_SV:PlayOnSource", "shiftyclick", 1)
         TriggerServerEvent('rentBike:refund', GetPlayerServerId(PlayerId()))
         QBCore.Functions.Notify(Config.bikeReturned, "success")
         bikeRented = false
     else
+        TriggerServerEvent("InteractSound_SV:PlayOnSource", "monkeyopening", 0.5)
         QBCore.Functions.Notify(Config.notOnBike, "error")
     end
 
