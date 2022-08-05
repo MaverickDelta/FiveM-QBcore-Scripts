@@ -198,7 +198,7 @@ function forkliftLoaded()
                 return
             end
         end
-        Wait(10)
+        Wait(1)
     end
 end
 
@@ -231,7 +231,7 @@ function jobInProgress()
             end
 
         end
-        Wait(5)
+        Wait(1)
     end
 end
 
@@ -294,7 +294,7 @@ function palletLoaded(palletCoords, location)
                 end
             end
         end
-        Wait(10)
+        Wait(1)
     end
 end
 
@@ -339,7 +339,7 @@ function palletJob(palletObject, spawnMultiplier)
                 
             end
         end
-        Wait(5)
+        Wait(1)
     end
 end
 
